@@ -50,12 +50,18 @@ class ProductMasterSerializer(serializers.ModelSerializer):
         model = ProductMaster
         fields = '__all__'
 
-class ProductSerializer(serializers.ModelSerializer):
-    product_master = serializers.PrimaryKeyRelatedField(queryset=ProductMaster.objects.all())
+# class ProductSerializer(serializers.ModelSerializer):
+#     product_master = serializers.PrimaryKeyRelatedField(queryset=ProductMaster.objects.all())
 
+#     class Meta:
+#         model = Product
+#         fields = '__all__'
+
+class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
 
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -71,6 +77,25 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return obj.image.url  # Relative URL as fallback
     
 
+class ProductVariantSerializer(serializers.ModelSerializer):
+    images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )  # Accept images as a list of file objects
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+    def create(self, validated_data):
+        # Extract images from validated data
+        images_data = validated_data.pop('images', [])  # Default to an empty list
+        product = Product.objects.create(**validated_data)  # Create product instance
+
+        # Save each image
+        for image in images_data:
+            ProductImage.objects.create(product=product, image=image)
+
+        return product
 
 
 class ReplySerializer(serializers.ModelSerializer):
@@ -86,4 +111,4 @@ class RequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Request
-        fields = ['id', 'raised_by_name', 'message', 'status', 'created_at', 'replies']
+        fields = ['id', 'raised_by_name', 'message', 'status', 'sub_option', 'created_at', 'replies']

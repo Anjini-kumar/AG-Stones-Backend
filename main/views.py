@@ -135,26 +135,63 @@ class ProductListView(APIView):
 
     def get(self, request, *args, **kwargs):
         # Fetch all products
-        products = Product.objects.all().select_related('product_master')
+        products = Product.objects.all()
 
         # Use the existing ProductSerializer to serialize product data
         serialized_products = ProductSerializer(products, many=True).data
 
         # Add ProductMaster details to the serialized data
-        for product in serialized_products:
-            product_master_id = product["product_master"]
-            # Fetch the related ProductMaster instance
-            product_master = ProductMaster.objects.get(id=product_master_id)
-            # Serialize ProductMaster using ProductMasterSerializer
-            product["product_master"] = ProductMasterSerializer(product_master).data
+        # for product in serialized_products:
+        #     product_master_id = product["product_master"]
+        #     # Fetch the related ProductMaster instance
+        #     product_master = ProductMaster.objects.get(id=product_master_id)
+        #     # Serialize ProductMaster using ProductMasterSerializer
+        #     product["product_master"] = ProductMasterSerializer(product_master).data
 
         return Response(serialized_products)
 
 # Create Product (only accessible by Admin and Procurement users)
 class ProductCreateView(generics.CreateAPIView):
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductVariantSerializer
     permission_classes = [IsAdminOrProcurement]
+
+
+# class ProductDetailView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, *args, **kwargs):
+#         user = request.user
+#         print(user,"dfs")
+#         # Fetch all products for Admin and Procurement
+#         products = Product.objects.all().select_related('product_master')
+#         print(user.user_type,"1223")
+#         # If the user is of type 'Warehouse', filter products by their warehouse
+#         if user.user_type == 'Warehouse':
+#             # Extract the part of the email before "@" and convert it to lowercase
+#             warehouse_name = user.email.split('@')[0].lower()
+#             print(warehouse_name,"warehouse name")
+#             # Convert warehouse choices to lowercase
+#             warehouse_choices = [choice[0].lower() for choice in Product.WAREHOUSE_CHOICES]
+#             print(warehouse_choices,"choices")
+#             # Check if the warehouse name matches a valid warehouse
+#             if warehouse_name in warehouse_choices:
+#                 products = products.filter(warehouse__iexact=warehouse_name)
+#             else:
+#                  products = Product.objects.all().select_related('product_master')
+
+#         # Serialize product data
+#         serialized_products = ProductSerializer(products, many=True).data
+
+#         # Add related ProductMaster details to the serialized data
+#         for product in serialized_products:
+#             product_master_id = product["product_master"]
+#             # Fetch the related ProductMaster instance
+#             product_master = ProductMaster.objects.get(id=product_master_id)
+#             # Serialize ProductMaster using ProductMasterSerializer
+#             product["product_master"] = ProductMasterSerializer(product_master).data
+
+#         return Response(serialized_products)
 
 
 class ProductDetailView(APIView):
@@ -162,37 +199,31 @@ class ProductDetailView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        print(user,"dfs")
-        # Fetch all products for Admin and Procurement
-        products = Product.objects.all().select_related('product_master')
-        print(user.user_type,"1223")
-        # If the user is of type 'Warehouse', filter products by their warehouse
+        print(user, "dfs")
+
+        # Fetch products based on user type
         if user.user_type == 'Warehouse':
             # Extract the part of the email before "@" and convert it to lowercase
             warehouse_name = user.email.split('@')[0].lower()
-            print(warehouse_name,"warehouse name")
+            print(warehouse_name, "warehouse name")
+
             # Convert warehouse choices to lowercase
             warehouse_choices = [choice[0].lower() for choice in Product.WAREHOUSE_CHOICES]
-            print(warehouse_choices,"choices")
+            print(warehouse_choices, "choices")
+
             # Check if the warehouse name matches a valid warehouse
             if warehouse_name in warehouse_choices:
-                products = products.filter(warehouse__iexact=warehouse_name)
+                products = Product.objects.filter(warehouse__iexact=warehouse_name)
             else:
-                 products = Product.objects.all().select_related('product_master')
+                return Response({"error": "Invalid warehouse name."}, status=400)
+        else:
+            # Fetch all products for Admin and Procurement
+            products = Product.objects.all()
 
         # Serialize product data
         serialized_products = ProductSerializer(products, many=True).data
 
-        # Add related ProductMaster details to the serialized data
-        for product in serialized_products:
-            product_master_id = product["product_master"]
-            # Fetch the related ProductMaster instance
-            product_master = ProductMaster.objects.get(id=product_master_id)
-            # Serialize ProductMaster using ProductMasterSerializer
-            product["product_master"] = ProductMasterSerializer(product_master).data
-
         return Response(serialized_products)
-
 
 # Update Product (only accessible by Admin and Procurement users)
 class ProductUpdateView(generics.UpdateAPIView):
