@@ -113,8 +113,8 @@ class Product(models.Model):
     ]
     ACTION_CHOICES = [
         ('Pending', 'Pending'),
-        ('Approve','Approve'),
-        ('Reject','Reject'),
+        ('Approved','Approved'),
+        ('Rejected','Rejected'),
     ]
     
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES)
@@ -134,7 +134,7 @@ class Product(models.Model):
     warehouse = models.CharField(max_length=100, choices=WAREHOUSE_CHOICES)
     file = models.FileField(upload_to='product_files/', null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='waiting for po')
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES, default='pending')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, default='Pending')
     comment = models.TextField(null=True, blank=True)
 
     def __str__(self):
