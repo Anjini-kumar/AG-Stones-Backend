@@ -79,8 +79,8 @@ class DeleteUserView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        user = request.user
-        if user.user_type != 'Admin':
+        # Check user permissions
+        if request.user.user_type != 'Admin':
             raise PermissionDenied("You do not have permission to delete users.")
         return super().delete(request, *args, **kwargs)
 
@@ -140,14 +140,6 @@ class ProductListView(APIView):
         # Use the existing ProductSerializer to serialize product data
         serialized_products = ProductSerializer(products, many=True).data
 
-        # Add ProductMaster details to the serialized data
-        # for product in serialized_products:
-        #     product_master_id = product["product_master"]
-        #     # Fetch the related ProductMaster instance
-        #     product_master = ProductMaster.objects.get(id=product_master_id)
-        #     # Serialize ProductMaster using ProductMasterSerializer
-        #     product["product_master"] = ProductMasterSerializer(product_master).data
-
         return Response(serialized_products)
 
 # Create Product (only accessible by Admin and Procurement users)
@@ -155,43 +147,6 @@ class ProductCreateView(generics.CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductVariantSerializer
     permission_classes = [IsAdminOrProcurement]
-
-
-# class ProductDetailView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, *args, **kwargs):
-#         user = request.user
-#         print(user,"dfs")
-#         # Fetch all products for Admin and Procurement
-#         products = Product.objects.all().select_related('product_master')
-#         print(user.user_type,"1223")
-#         # If the user is of type 'Warehouse', filter products by their warehouse
-#         if user.user_type == 'Warehouse':
-#             # Extract the part of the email before "@" and convert it to lowercase
-#             warehouse_name = user.email.split('@')[0].lower()
-#             print(warehouse_name,"warehouse name")
-#             # Convert warehouse choices to lowercase
-#             warehouse_choices = [choice[0].lower() for choice in Product.WAREHOUSE_CHOICES]
-#             print(warehouse_choices,"choices")
-#             # Check if the warehouse name matches a valid warehouse
-#             if warehouse_name in warehouse_choices:
-#                 products = products.filter(warehouse__iexact=warehouse_name)
-#             else:
-#                  products = Product.objects.all().select_related('product_master')
-
-#         # Serialize product data
-#         serialized_products = ProductSerializer(products, many=True).data
-
-#         # Add related ProductMaster details to the serialized data
-#         for product in serialized_products:
-#             product_master_id = product["product_master"]
-#             # Fetch the related ProductMaster instance
-#             product_master = ProductMaster.objects.get(id=product_master_id)
-#             # Serialize ProductMaster using ProductMasterSerializer
-#             product["product_master"] = ProductMasterSerializer(product_master).data
-
-#         return Response(serialized_products)
 
 
 class ProductDetailView(APIView):
@@ -213,7 +168,10 @@ class ProductDetailView(APIView):
 
             # Check if the warehouse name matches a valid warehouse
             if warehouse_name in warehouse_choices:
-                products = Product.objects.filter(warehouse__iexact=warehouse_name)
+                # Fetch products for the specific warehouse and also include products categorized as 'All'
+                products = Product.objects.filter(
+                    warehouse__iexact=warehouse_name
+                ) | Product.objects.filter(warehouse__iexact='all')
             else:
                 return Response({"error": "Invalid warehouse name."}, status=400)
         else:
@@ -400,3 +358,21 @@ class CreateReplyView(CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(replied_by=self.request.user)
+
+
+class ReorderListView(generics.ListAPIView):
+    queryset = Reorder.objects.all()
+    serializer_class = ReorderSerializer
+    permission_classes = [IsAuthenticated]
+
+class ReorderCreateView(generics.CreateAPIView):
+    queryset = Reorder.objects.all()
+    serializer_class = ReorderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.user_type == 'Warehouse':
+            serializer.save()
+        else:
+            raise serializers.ValidationError("You do not have permission to create a reorder.")

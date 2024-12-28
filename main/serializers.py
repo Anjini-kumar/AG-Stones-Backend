@@ -111,4 +111,10 @@ class RequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Request
-        fields = ['id', 'raised_by_name', 'message', 'status', 'sub_option', 'created_at', 'replies']
+        fields = ['id', 'raised_by_name', 'message', 'status', 'subject', 'created_at', 'replies']
+
+
+class ReorderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reorder
+        fields = '__all__'

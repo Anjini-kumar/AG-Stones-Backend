@@ -36,4 +36,8 @@ urlpatterns = [
     path('replies/create/', CreateReplyView.as_view(), name='create-reply'),
 
 
+    path('reorders/', ReorderListView.as_view(), name='reorder-list'),
+    path('reorders/create/', ReorderCreateView.as_view(), name='reorder-create'),
+
+
 ]
