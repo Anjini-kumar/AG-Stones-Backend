@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'main',
     'corsheaders',
+    'anymail',
+
 ]
 
 MIDDLEWARE = [
@@ -160,3 +162,15 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Correct SMTP server for Gmail
+EMAIL_PORT = 587  # TLS port
+EMAIL_USE_TLS = True  # Use TLS encryption
+EMAIL_HOST_USER = 'your_email@gmail.com'  
+EMAIL_HOST_PASSWORD = 'your_app_password_or_email_password'  
+DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
+
+
+# settings.py
+RECAPTCHA_SECRET_KEY = ""

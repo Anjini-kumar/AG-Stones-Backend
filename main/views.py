@@ -1,8 +1,9 @@
 from rest_framework import generics, permissions,viewsets
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import *
 from .serializers import *
+import requests
 from rest_framework.permissions import IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
@@ -10,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import CreateAPIView
+from django.contrib.auth import authenticate
+from django.conf import settings
 
 
 
@@ -27,36 +30,68 @@ class LoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         password = request.data.get('password')
-        user = CustomUser.objects.filter(email=email).first()
-        print(user)
-        print(email)
-        print(user.user_type)
-        if user and user.check_password(password):
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'user_type': user.user_type,
-                'user':user.username
-            })
-        return Response({'error': 'Invalid Credentials'}, status=400)
+        recaptcha_response = request.data.get('recaptcha')
 
+        # Verify reCAPTCHA
+        recaptcha_url = "https://www.google.com/recaptcha/api/siteverify"
+        recaptcha_data = {
+            "secret": settings.RECAPTCHA_SECRET_KEY,  # Use the secret key from settings
+            "response": recaptcha_response,
+        }
+        recaptcha_verify = requests.post(recaptcha_url, data=recaptcha_data)
+        recaptcha_result = recaptcha_verify.json()
+
+        if not recaptcha_result.get("success"):
+            return Response(
+                {"error": "Invalid reCAPTCHA. Please try again."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Authenticate the user
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "Invalid email or password"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "user_type": user.user_type,
+                    "user": user.username,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {"error": "Invalid email or password"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        try:
-            refresh_token = request.data.get("refresh")
-            if not refresh_token:
-                return Response({"error": "Refresh token is required"}, status=400)
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            # Blacklist the refresh token
             token = RefreshToken(refresh_token)
-            token.blacklist()  # Blacklist the refresh token
-            return Response({"message": "Logged out successfully"}, status=200)
+            token.blacklist()
+            return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+
+        except TokenError:
+            return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": str(e)}, status=400)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -79,8 +114,8 @@ class DeleteUserView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        # Check user permissions
-        if request.user.user_type != 'Admin':
+        user = request.user
+        if user.user_type != 'Admin':
             raise PermissionDenied("You do not have permission to delete users.")
         return super().delete(request, *args, **kwargs)
 
