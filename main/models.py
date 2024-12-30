@@ -88,7 +88,7 @@ class Product(models.Model):
     comment = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.product_type} - {self.color_design}"
+        return f"{self.category} - {self.color_design}"
 
 
 class ProductImage(models.Model):
