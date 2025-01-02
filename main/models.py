@@ -36,41 +36,43 @@ class ProductMaster(models.Model):
 
 
 class Product(models.Model):
-
     CATEGORY_CHOICES = [
         ('Granite', 'Granite'),
         ('Marble', 'Marble'),
-        ('Quarzite','Quarzite'),
-        ('Dolomite','Dolomite'),
-        ('Onyx','Onyx'),
+        ('Quarzite', 'Quarzite'),
+        ('Dolomite', 'Dolomite'),
+        ('Onyx', 'Onyx'),
         ('Quartz', 'Quartz'),
         ('Porcelain', 'Porcelain'),
-        ('Semi-Precious','Semi-Precious'),
-        ('Printed Quartz','Printed Quartz')    
+        ('Semi-Precious', 'Semi-Precious'),
+        ('Printed Quartz', 'Printed Quartz')
     ]
 
     WAREHOUSE_CHOICES = [
-        ('All','All'),
+        ('All', 'All'),
         ('Cincinnati', 'Cincinnati'),
         ('Raleigh', 'Raleigh'),
         ('Dallas', 'Dallas'),
         ('Austin', 'Austin'),
     ]
+
     STATUS_CHOICES = [
-        ('waiting for po', 'waiting for po'),
-        ('production', 'production'),
-        ('container booking', 'container booking'),
-        ('india Port', 'india Port'),
-        ('vessel Date(ETD booking id)', 'vessel Date(ETD booking id)'),
+        ('PI Received', 'P.I Received'),
+        ('PO Raised', 'P.O Raised'),
+        ('In Production', 'In Production'),
+        ('Container No', 'Container No'),
+        ('ETD from Origin Port', 'ETD from Origin Port'),
+        ('On-Water', 'On-Water'),
+        ('ETA: US Port', 'ETA: US Port'),
     ]
+
     ACTION_CHOICES = [
         ('Pending', 'Pending'),
-        ('Approved','Approved'),
-        ('Rejected','Rejected'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
     ]
-    
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    category = models.CharField(max_length=20, blank=True, null=True)
+
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, blank=True, null=True)
     color_design = models.CharField(max_length=100, null=True)
     block_no = models.CharField(max_length=100)
     bundles = models.CharField(max_length=50)
@@ -83,12 +85,14 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     warehouse = models.CharField(max_length=100, choices=WAREHOUSE_CHOICES)
     file = models.FileField(upload_to='product_files/', null=True, blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='waiting for po')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PI Received')
+    status_text = models.TextField(null=True, blank=True) 
     action = models.CharField(max_length=20, choices=ACTION_CHOICES, default='Pending')
     comment = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.category} - {self.color_design}"
+
 
 
 class ProductImage(models.Model):

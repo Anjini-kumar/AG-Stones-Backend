@@ -39,5 +39,8 @@ urlpatterns = [
     path('reorders/', ReorderListView.as_view(), name='reorder-list'),
     path('reorders/create/', ReorderCreateView.as_view(), name='reorder-create'),
 
+    path('productsapproves/', ApprovedProductsView.as_view(), name='approved-products'),
+    path('productsstatus/<int:pk>/', UpdateProductStatusView.as_view(), name='update-product-status'),
+
 
 ]
