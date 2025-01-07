@@ -11,7 +11,6 @@ class CustomUser(AbstractUser):
     )
     user_type = models.CharField(max_length=15, choices=USER_TYPE_CHOICES)
     mobile = models.CharField(max_length=15)
-    gender = models.CharField(max_length=10)
 
 
 
