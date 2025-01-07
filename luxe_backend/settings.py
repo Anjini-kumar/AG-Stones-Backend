@@ -173,4 +173,4 @@ DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
 
 
 # settings.py
-RECAPTCHA_SECRET_KEY = ""
+RECAPTCHA_SECRET_KEY = "6LfYXqkqAAAAADyDZ8cfhF7g4BEms-NHh6JVOB4t"
