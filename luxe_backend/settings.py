@@ -172,5 +172,21 @@ EMAIL_HOST_PASSWORD = 'your_app_password_or_email_password'
 DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
 
 
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+
 # settings.py
 RECAPTCHA_SECRET_KEY = "6LfYXqkqAAAAADyDZ8cfhF7g4BEms-NHh6JVOB4t"

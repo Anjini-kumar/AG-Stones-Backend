@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import update_last_login
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import CreateAPIView
@@ -22,6 +23,33 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
 
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        data = request.data
+        
+        # Validate old password
+        old_password = data.get('old_password')
+        if not user.check_password(old_password):
+            return Response({'old_password': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate and set new password
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        if new_password != confirm_password:
+            return Response({'new_password': 'New password and confirm password do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        # Optionally update the last login timestamp
+        update_last_login(None, user)
+
+        return Response({'detail': 'Password updated successfully.'}, status=status.HTTP_200_OK)
 
 
 class LoginView(generics.GenericAPIView):
@@ -189,31 +217,30 @@ class ProductDetailView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        print(user, "dfs")
 
-        # Fetch products based on user type
+        # Check if the user is a Warehouse user
         if user.user_type == 'Warehouse':
-            # Extract the part of the email before "@" and convert it to lowercase
-            warehouse_name = user.email.split('@')[0].lower()
-            print(warehouse_name, "warehouse name")
+            # Get the sub_user_type of the Warehouse user
+            sub_user_type = user.sub_user_type
 
-            # Convert warehouse choices to lowercase
-            warehouse_choices = [choice[0].lower() for choice in Product.WAREHOUSE_CHOICES]
-            print(warehouse_choices, "choices")
-
-            # Check if the warehouse name matches a valid warehouse
-            if warehouse_name in warehouse_choices:
-                # Fetch products for the specific warehouse and also include products categorized as 'All'
-                products = Product.objects.filter(
-                    warehouse__iexact=warehouse_name
-                ) | Product.objects.filter(warehouse__iexact='all')
+            # Fetch products based on the sub_user_type
+            if sub_user_type:
+                # Check if sub_user_type matches any valid warehouse choice
+                valid_choices = [choice[0] for choice in Product.WAREHOUSE_CHOICES]
+                if sub_user_type in valid_choices:
+                    # Fetch products specific to the sub_user_type and 'All' category
+                    products = Product.objects.filter(
+                        warehouse=sub_user_type
+                    ) | Product.objects.filter(warehouse='All')
+                else:
+                    return Response({"error": "Invalid sub_user_type."}, status=400)
             else:
-                return Response({"error": "Invalid warehouse name."}, status=400)
+                return Response({"error": "sub_user_type is required for Warehouse users."}, status=400)
         else:
-            # Fetch all products for Admin and Procurement
+            # Fetch all products for Admin and Procurement users
             products = Product.objects.all()
 
-        # Serialize product data
+        # Serialize the product data
         serialized_products = ProductSerializer(products, many=True).data
 
         return Response(serialized_products)

@@ -4,11 +4,24 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'user_type', 'mobile', 'password', 'is_staff']
+        fields = ['id', 'username', 'email', 'user_type', 'mobile', 'password', 'sub_user_type', 'is_staff']
         extra_kwargs = {
             'password': {'write_only': True},
-            'is_staff': {'read_only': True},  
+            'is_staff': {'read_only': True},
         }
+
+    def validate(self, data):
+        # Validate sub_user_type only for Warehouse users
+        if data.get('user_type') == 'Warehouse' and not data.get('sub_user_type'):
+            raise serializers.ValidationError({
+                'sub_user_type': 'This field is required for Warehouse users.'
+            })
+
+        if data.get('user_type') != 'Warehouse' and data.get('sub_user_type'):
+            raise serializers.ValidationError({
+                'sub_user_type': 'This field is not allowed for non-Warehouse users.'
+            })
+        return data
 
     def create(self, validated_data):
         user_type = validated_data['user_type']
@@ -19,6 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             user_type=user_type,
             mobile=validated_data['mobile'],
+            sub_user_type=validated_data.get('sub_user_type')  # Get sub_user_type if provided
         )
         
         # Set the password
@@ -41,7 +55,6 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data.pop('password')
 
         return super().update(instance, validated_data)
-
 
 
 class ProductMasterSerializer(serializers.ModelSerializer):

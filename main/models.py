@@ -9,8 +9,26 @@ class CustomUser(AbstractUser):
         ('Warehouse', 'Warehouse'),
         ('Procurement', 'Procurement'),
     )
+    WAREHOUSE_SUB_USER_TYPE_CHOICES = (
+        ('All', 'All'),
+        ('Cincinnati', 'Cincinnati'),
+        ('Raleigh', 'Raleigh'),
+        ('Dallas', 'Dallas'),
+        ('Austin', 'Austin'),
+    )
     user_type = models.CharField(max_length=15, choices=USER_TYPE_CHOICES)
     mobile = models.CharField(max_length=15)
+    sub_user_type = models.CharField(
+        max_length=20,
+        choices=WAREHOUSE_SUB_USER_TYPE_CHOICES,
+        blank=True,  # Allow it to be empty for non-Warehouse users
+        null=True
+    )
+
+    def save(self, *args, **kwargs):
+        if self.user_type != 'Warehouse':
+            self.sub_user_type = None  # Clear sub_user_type if user is not Warehouse
+        super().save(*args, **kwargs)
 
 
 
@@ -78,13 +96,13 @@ class Product(models.Model):
     thickness = models.DecimalField(max_digits=5, decimal_places=2)
     length = models.DecimalField(max_digits=10, decimal_places=2)
     width = models.DecimalField(max_digits=10, decimal_places=2)
-    quantity = models.IntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
     note = models.TextField(null=True, blank=True)
-    offer_start = models.DateTimeField()
+    offer_start = models.DateField() 
     price = models.DecimalField(max_digits=10, decimal_places=2)
     warehouse = models.CharField(max_length=100, choices=WAREHOUSE_CHOICES)
     file = models.FileField(upload_to='product_files/', null=True, blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PI Received')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='N/A')
     status_text = models.TextField(null=True, blank=True) 
     action = models.CharField(max_length=20, choices=ACTION_CHOICES, default='Pending')
     comment = models.TextField(null=True, blank=True)
